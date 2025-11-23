@@ -1,45 +1,85 @@
-⚛️ Interactive 3D Atom Simulator
+# ⚛️ Interactive 3D Atom Simulator
 
-This is a single-file, interactive web application built using HTML, Tailwind CSS, and Three.js that visualizes the Bohr model of an atom. Users can change the element and adjust the number of electrons to explore how atomic structure determines an element's identity and its charge state (ion formation).
+This project is a fully self-contained, single-file web application that visualizes the **Bohr atomic model** in interactive 3D using **HTML**, **Tailwind CSS**, and **Three.js**.  
+Users can explore atomic structure by selecting elements, adjusting proton/electron counts, and observing how changes affect the atom’s charge state.
 
-✨ Features
+---
 
-3D Visualization: Renders a responsive, rotatable 3D model of the atom, including the nucleus and electron shells.
+## 🖼️ Screenshot
 
-Element Selection: Quickly switch between the first five elements (Hydrogen, Helium, Lithium, Beryllium, and Boron) to view their neutral atomic structure.
+![Atom Simulator Screenshot](./Screenshot.png)
 
-Customization via Sliders:
+---
 
-Protons (Z): Change the atomic number to simulate different elements (up to Argon, Z=18).
+## ✨ Features
 
-Electrons: Adjust the electron count to visualize ions (cations and anions) and track the atom's charge state.
+### 🔭 3D Visualization  
+- Fully interactive 3D atom model  
+- Realistic orbits with animated electrons  
+- Rotate the scene via drag/swipe gestures  
 
-Real-time Info: An overlay panel displays the element name, atomic number, electron count, and calculated charge.
+### 🔬 Element Selection  
+- Quick-select buttons for: **H, He, Li, Be, B**  
+- Automatically loads the neutral (Z = electrons) structure  
 
-Interactive Rotation: Drag or swipe the screen to rotate the atom in 3D space.
+### 🎚️ Customization Sliders  
+- **Protons (Atomic Number Z):** 1–18 (Hydrogen → Argon)  
+- **Electrons:** Add/remove to form ions  
+- Instantly updates the atom’s charge state  
 
-🖼️ Screenshot
+### 📊 Real-time Information Panel  
+Displays:  
+- Element name  
+- Atomic number (Z)  
+- Electron count  
+- Ion charge (cation/anion/neutral)  
 
-A visual representation of the application's interface:
+### 🌀 Interactive Rotation  
+- Rotate the atom freely in 3D space  
+- Works on desktop and mobile touchscreen devices  
 
-🚀 How to Use
+---
 
-Open the File: Since this is a self-contained HTML file (atom_simulator.html), simply open it directly in any modern web browser.
+## 🚀 How to Use
 
-Select an Element: Use the quick-access buttons (H, He, Li, Be, B) to load the neutral structure of those elements.
+1. **Open the File**  
+   Simply open `index.html` in any modern web browser.  
+   No server or installation needed.
 
-Customize the Atom:
+2. **Select an Element**  
+   Click any of the quick-access buttons (**H**, **He**, **Li**, **Be**, **B**) to load neutral atoms.
 
-Use the Protons (Z) slider to select a specific element (from 1 to 18).
+3. **Customize the Atom**  
+   - Adjust **Protons (Z)** to switch elements (up to Argon).  
+   - Adjust **Electrons** to create ions and observe charge changes.
 
-Use the Electrons slider to add or remove electrons and observe how the charge state changes (displayed in the top-left corner).
+4. **Interact with the 3D Model**  
+   - Click + drag (desktop) or swipe (mobile) to rotate the atom  
+   - View electron shells from any angle  
 
-Interact: Click, drag, or swipe the 3D model to rotate it and view the orbiting electrons from different angles.
+---
 
-🛠️ Technology Stack
+## 🛠️ Technology Stack
 
-HTML5: Structure of the application.
+- **HTML5** – Structural layout  
+- **Tailwind CSS** – Clean and responsive UI styling  
+- **Three.js** – 3D graphics and orbiting electron animation  
 
-Tailwind CSS: Responsive utility-first styling.
+---
 
-Three.js: JavaScript library used for creating and rendering the 3D graphics.
+## 📂 Project Structure
+
+```
+/
+├── index.html   # Self-contained application
+├── Screenshot.png        # Preview image for README
+└── README.md             # Documentation
+```
+
+---
+
+## 📄 License
+
+This project is open source under the **MIT License**.  
+Created for educational and visualization purposes.
+
