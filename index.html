@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 3D Atom Simulator</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Three.js library for 3D graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* Custom styles for the simulator to ensure full screen */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #0d1117; /* Dark background */
+        }
+        #atom-container {
+            position: relative;
+            width: 100%;
+            flex-grow: 1;
+            min-height: 50vh; /* Ensure container has space */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            touch-action: none; /* Disable default touch actions */
+        }
+        .controls {
+            z-index: 10;
+        }
+        /* Style for the element buttons */
+        .element-button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            transition: all 0.2s;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            background-color: #1f2937; /* Dark gray background */
+            color: #9ca3af; /* Light gray text */
+            border: 1px solid #374151;
+        }
+        .element-button:hover {
+            background-color: #374151; /* Lighter gray on hover */
+            color: #ffffff;
+        }
+        .element-button.active {
+            background-color: #0ea5e9; /* Sky blue for active */
+            color: #ffffff;
+            border-color: #38bdf8;
+            box-shadow: 0 0 10px #0ea5e9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="p-4 w-full max-w-4xl text-white text-center">
+        <h1 class="text-3xl font-extrabold mb-1 text-sky-400">The Atomic Model</h1>
+        <p class="text-sm text-gray-400">Drag the screen to rotate the view. Use the buttons or sliders to change the element and charge.</p>
+    </div>
+
+    <!-- 3D Atom Container -->
+    <div id="atom-container" class="w-full h-full relative">
+        <div id="info-overlay" class="absolute top-4 left-4 p-3 bg-gray-800 bg-opacity-80 rounded-lg shadow-xl text-sm text-white border border-sky-600">
+            <div id="element-name" class="font-bold text-lg text-sky-300">Hydrogen (H)</div>
+            <div id="mass-number">Mass Number: 1</div>
+            <div id="atomic-number">Protons: 1</div>
+            <div id="electron-count">Electrons: 1</div>
+            <div id="charge-state" class="mt-1 font-semibold text-green-400">Charge: Neutral (0)</div>
+        </div>
+    </div>
+
+    <!-- Controls Panel -->
+    <div class="controls w-full p-4 bg-gray-800 shadow-2xl rounded-t-xl max-w-4xl">
+        
+        <!-- Element Selection Buttons -->
+        <div class="flex flex-wrap justify-center space-x-2 mb-6">
+            <button class="element-button active" data-z="1">H</button>
+            <button class="element-button" data-z="2">He</button>
+            <button class="element-button" data-z="3">Li</button>
+            <button class="element-button" data-z="4">Be</button>
+            <button class="element-button" data-z="5">B</button>
+        </div>
+
+        <div class="md:flex md:space-x-8">
+            <div class="flex-1 mb-4 md:mb-0">
+                <label for="protons-slider" class="block text-sm font-medium text-gray-300">Protons (Atomic Number, Z)</label>
+                <input type="range" id="protons-slider" min="1" max="18" value="1" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer range-lg transition-colors duration-200" style="--tw-range-thumb-color: #38bdf8;">
+                <span id="protons-value" class="text-sky-300 font-mono">1</span>
+            </div>
+            <div class="flex-1">
+                <label for="electrons-slider" class="block text-sm font-medium text-gray-300">Electrons (Charge)</label>
+                <input type="range" id="electrons-slider" min="1" max="18" value="1" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer range-lg transition-colors duration-200" style="--tw-range-thumb-color: #10b981;">
+                <span id="electrons-value" class="text-green-400 font-mono">1</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ELEMENT DATA (First 18 Elements) ---
+        const ELEMENTS = [
+            { Z: 1, symbol: 'H', name: 'Hydrogen' },
+            { Z: 2, symbol: 'He', name: 'Helium' },
+            { Z: 3, symbol: 'Li', name: 'Lithium' },
+            { Z: 4, symbol: 'Be', name: 'Beryllium' },
+            { Z: 5, symbol: 'B', name: 'Boron' },
+            { Z: 6, symbol: 'C', name: 'Carbon' },
+            { Z: 7, symbol: 'N', name: 'Nitrogen' },
+            { Z: 8, symbol: 'O', name: 'Oxygen' },
+            { Z: 9, symbol: 'F', name: 'Fluorine' },
+            { Z: 10, symbol: 'Ne', name: 'Neon' },
+            { Z: 11, symbol: 'Na', name: 'Sodium' },
+            { Z: 12, symbol: 'Mg', name: 'Magnesium' },
+            { Z: 13, symbol: 'Al', name: 'Aluminum' },
+            { Z: 14, symbol: 'Si', name: 'Silicon' },
+            { Z: 15, symbol: 'P', name: 'Phosphorus' },
+            { Z: 16, symbol: 'S', name: 'Sulfur' },
+            { Z: 17, symbol: 'Cl', name: 'Chlorine' },
+            { Z: 18, symbol: 'Ar', name: 'Argon' }
+        ];
+
+        // Maximum capacity for the first three electron shells (2n^2)
+        const SHELL_CAPACITIES = [2, 8, 18];
+        const SHELL_RADII = [1.5, 2.5, 3.5]; // Relative radii for the shells
+
+        // --- THREE.JS SETUP ---
+        let scene, camera, renderer;
+        let atomGroup; // Group to hold nucleus, protons, and electrons
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        const container = document.getElementById('atom-container');
+
+        // Initial values
+        let currentProtons = 1;
+        let currentElectrons = 1;
+        let currentNeutrons = 0; // Simplified for visualization, usually Z or Z+1
+
+        function init() {
+            // 1. Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0d1117);
+
+            // 2. Camera setup
+            camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.z = 8;
+
+            // 3. Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            // 4. Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 5); // soft white light
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+            directionalLight.position.set(5, 5, 5).normalize();
+            scene.add(directionalLight);
+
+            // 5. Atom Group
+            atomGroup = new THREE.Group();
+            scene.add(atomGroup);
+
+            // Initial drawing
+            updateAtom(currentProtons, currentElectrons);
+
+            // 6. Event Listeners
+            window.addEventListener('resize', onWindowResize, false);
+            setupControls();
+            setupInteractions();
+            setupElementButtons(); // New function call
+        }
+
+        function onWindowResize() {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        
+        /**
+         * Generates a random point within a sphere of a given radius.
+         * @param {number} radius - The radius of the sphere.
+         * @returns {THREE.Vector3} A random position vector.
+         */
+        function getRandomPointInSphere(radius) {
+            // Generate a random position in spherical coordinates
+            const phi = Math.random() * Math.PI * 2; // Longitude
+            const theta = Math.acos(Math.random() * 2 - 1); // Latitude
+            const r = Math.cbrt(Math.random()) * radius; // Radius (to ensure uniform distribution)
+
+            // Convert spherical to Cartesian coordinates
+            const x = r * Math.sin(theta) * Math.cos(phi);
+            const y = r * Math.sin(theta) * Math.sin(phi);
+            const z = r * Math.cos(theta);
+
+            return new THREE.Vector3(x, y, z);
+        }
+
+
+        // --- DRAWING FUNCTIONS ---
+
+        function updateAtom(protons, electrons) {
+            // Clear previous atom structure
+            while (atomGroup.children.length > 0) {
+                atomGroup.remove(atomGroup.children[0]);
+            }
+
+            // Calculate neutrons (Simplification: Neutrons = Protons for the model)
+            currentNeutrons = protons; 
+            
+            // --- 1. Draw Nucleus (Protons + Neutrons) ---
+            drawNucleus(protons, currentNeutrons);
+
+            // --- 2. Draw Electron Shells and Electrons ---
+            drawElectronStructure(protons, electrons);
+
+            // --- 3. Update Info Overlay ---
+            updateInfoOverlay(protons, electrons, currentNeutrons);
+        }
+
+        function drawNucleus(protons, neutrons) {
+            const nucleonCount = protons + neutrons;
+            const nucleusRadius = 0.5 + Math.cbrt(nucleonCount) * 0.15; // Scaled based on particle count
+            const particleRadius = nucleusRadius * 0.15;
+
+            const nucleusMaterial = new THREE.MeshPhongMaterial({ color: 0xcc3333, emissive: 0x880000 });
+            const nucleusGeometry = new THREE.SphereGeometry(nucleusRadius, 32, 32);
+            const nucleusMesh = new THREE.Mesh(nucleusGeometry, nucleusMaterial);
+            nucleusMesh.name = 'NucleusBody';
+            atomGroup.add(nucleusMesh);
+
+            // Add Protons and Neutrons clustered inside for effect
+            const particleGeometry = new THREE.SphereGeometry(particleRadius, 8, 8);
+
+            for (let i = 0; i < nucleonCount; i++) {
+                // Random position within the nucleus sphere 
+                let pos = getRandomPointInSphere(nucleusRadius * 0.8);
+                
+                let particleMesh;
+                if (i < protons) {
+                    // Proton (Red/Positive)
+                    const protonMaterial = new THREE.MeshBasicMaterial({ color: 0xff4444 });
+                    particleMesh = new THREE.Mesh(particleGeometry, protonMaterial);
+                } else {
+                    // Neutron (Gray/Neutral)
+                    const neutronMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
+                    particleMesh = new THREE.Mesh(particleGeometry, neutronMaterial);
+                }
+                particleMesh.position.copy(pos);
+                nucleusMesh.add(particleMesh);
+            }
+        }
+
+        function drawElectronStructure(protons, electrons) {
+            let remainingElectrons = electrons;
+            const electronGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+            const electronMaterial = new THREE.MeshPhongMaterial({ color: 0x44ff44, emissive: 0x00aa00 });
+
+            for (let shellIndex = 0; shellIndex < SHELL_CAPACITIES.length; shellIndex++) {
+                const capacity = SHELL_CAPACITIES[shellIndex];
+                const radius = SHELL_RADII[shellIndex];
+                const electronsInShell = Math.min(remainingElectrons, capacity);
+
+                if (electronsInShell === 0) break; // Stop if no electrons left
+
+                // 1. Draw Shell Orbit Line
+                const segments = 64;
+                const ringGeometry = new THREE.RingGeometry(radius - 0.005, radius + 0.005, segments);
+                const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x3333ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+                const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
+                ringMesh.rotation.x = Math.PI / 2; // Lay flat on XZ plane
+                atomGroup.add(ringMesh);
+
+                // 2. Place Electrons
+                for (let i = 0; i < electronsInShell; i++) {
+                    const angle = (i / electronsInShell) * Math.PI * 2;
+                    const electronMesh = new THREE.Mesh(electronGeometry, electronMaterial);
+
+                    // Add a group to contain the electron and its rotation logic
+                    const electronOrbitGroup = new THREE.Group();
+                    electronOrbitGroup.userData.radius = radius;
+                    electronOrbitGroup.userData.speed = 0.01 + (shellIndex * 0.005); // Faster for outer shells
+
+                    // Initial position on the ring
+                    electronMesh.position.x = radius;
+                    electronOrbitGroup.rotation.y = angle; // Distribute them initially
+
+                    electronOrbitGroup.add(electronMesh);
+                    atomGroup.add(electronOrbitGroup);
+                }
+
+                remainingElectrons -= electronsInShell;
+            }
+        }
+
+        // --- INFO OVERLAY UPDATE ---
+        function updateInfoOverlay(protons, electrons, neutrons) {
+            const element = ELEMENTS.find(e => e.Z === protons) || { Z: protons, symbol: '??', name: 'Unknown' };
+            const massNumber = protons + neutrons;
+            const charge = protons - electrons;
+            
+            document.getElementById('element-name').textContent = `${element.name} (${element.symbol})`;
+            document.getElementById('atomic-number').textContent = `Protons: ${protons}`;
+            document.getElementById('mass-number').textContent = `Mass Number: ${massNumber}`;
+            document.getElementById('electron-count').textContent = `Electrons: ${electrons}`;
+
+            const chargeState = document.getElementById('charge-state');
+            chargeState.textContent = `Charge: ${charge > 0 ? '+' + charge : charge < 0 ? charge : 'Neutral (0)'}`;
+            
+            if (charge > 0) {
+                chargeState.className = 'mt-1 font-semibold text-red-400'; // Cation (Positive ion)
+            } else if (charge < 0) {
+                chargeState.className = 'mt-1 font-semibold text-yellow-400'; // Anion (Negative ion)
+            } else {
+                chargeState.className = 'mt-1 font-semibold text-green-400'; // Neutral
+            }
+        }
+
+        // --- ELEMENT SELECTION LOGIC ---
+
+        /**
+         * Sets the current atom model to a neutral state for the given atomic number (Z).
+         * @param {number} Z - The atomic number (Protons).
+         */
+        function setElement(Z) {
+            const protonsSlider = document.getElementById('protons-slider');
+            const electronsSlider = document.getElementById('electrons-slider');
+            const protonsValueSpan = document.getElementById('protons-value');
+            const electronsValueSpan = document.getElementById('electrons-value');
+
+            // 1. Update global state
+            currentProtons = Z;
+            currentElectrons = Z; // Set to neutral charge
+
+            // 2. Update sliders and spans
+            protonsSlider.value = Z;
+            protonsValueSpan.textContent = Z;
+            
+            // Adjust electron slider constraints based on new proton count
+            const maxElectronsForDisplay = SHELL_CAPACITIES.slice(0, 3).reduce((sum, cap) => sum + cap, 0); 
+            electronsSlider.max = Math.min(maxElectronsForDisplay, Z + 3); // Max charge of -3
+            electronsSlider.min = Math.max(1, Z - 3); // Max charge of +3
+
+            electronsSlider.value = currentElectrons;
+            electronsValueSpan.textContent = currentElectrons;
+
+            // 3. Update 3D visualization
+            updateAtom(currentProtons, currentElectrons);
+
+            // 4. Update button active state
+            document.querySelectorAll('.element-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeButton = document.querySelector(`.element-button[data-z="${Z}"]`);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+        }
+
+        function setupElementButtons() {
+            document.querySelectorAll('.element-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const Z = parseInt(button.dataset.z);
+                    setElement(Z);
+                });
+            });
+        }
+
+        // --- INTERACTION & SLIDER CONTROLS ---
+
+        function setupControls() {
+            const protonsSlider = document.getElementById('protons-slider');
+            const electronsSlider = document.getElementById('electrons-slider');
+            const protonsValueSpan = document.getElementById('protons-value');
+            const electronsValueSpan = document.getElementById('electrons-value');
+            
+            const maxElectronsForDisplay = SHELL_CAPACITIES.slice(0, 3).reduce((sum, cap) => sum + cap, 0); 
+
+            // Initial setup of electron slider constraints based on starting proton value (1)
+            electronsSlider.max = Math.min(maxElectronsForDisplay, currentProtons + 3);
+            electronsSlider.min = Math.max(1, currentProtons - 3);
+
+
+            protonsSlider.addEventListener('input', (event) => {
+                const Z = parseInt(event.target.value);
+                
+                // When using the slider, we maintain charge unless constraints are violated
+                const chargeDifference = currentProtons - currentElectrons; 
+                
+                currentProtons = Z;
+                protonsValueSpan.textContent = currentProtons;
+
+                // Adjust electron slider maximum and minimum when protons change
+                const newMaxE = Math.min(maxElectronsForDisplay, currentProtons + 3); 
+                const newMinE = Math.max(1, currentProtons - 3); 
+                
+                electronsSlider.max = newMaxE;
+                electronsSlider.min = newMinE;
+                
+                // Calculate new electron count based on maintained charge, clamped by new min/max
+                let newElectrons = currentProtons - chargeDifference;
+                newElectrons = Math.max(newMinE, Math.min(newMaxE, newElectrons));
+                currentElectrons = newElectrons;
+
+
+                electronsSlider.value = currentElectrons;
+                electronsValueSpan.textContent = currentElectrons;
+
+                updateAtom(currentProtons, currentElectrons);
+                
+                // Remove active state from element buttons when using slider
+                document.querySelectorAll('.element-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+            });
+
+            electronsSlider.addEventListener('input', (event) => {
+                currentElectrons = parseInt(event.target.value);
+                electronsValueSpan.textContent = currentElectrons;
+                updateAtom(currentProtons, currentElectrons);
+                
+                // Remove active state from element buttons when changing charge
+                 document.querySelectorAll('.element-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+            });
+            
+            // Initial setup of sliders and display
+            protonsValueSpan.textContent = currentProtons;
+            electronsValueSpan.textContent = currentElectrons;
+        }
+
+        function setupInteractions() {
+            const container = renderer.domElement;
+            
+            function onDown(clientX, clientY) {
+                isDragging = true;
+                previousMousePosition.x = clientX;
+                previousMousePosition.y = clientY;
+            }
+
+            function onMove(clientX, clientY) {
+                if (!isDragging) return;
+
+                const deltaX = clientX - previousMousePosition.x;
+                const deltaY = clientY - previousMousePosition.y;
+
+                // Rotation calculation: Sensitivity and direction
+                const rotationSpeed = 0.005;
+
+                // Rotate the main atom group around the Y-axis (vertical)
+                atomGroup.rotation.y += deltaX * rotationSpeed;
+                
+                // Rotate the atom group around the X-axis (horizontal) - clamp to prevent flipping
+                const newXRotation = atomGroup.rotation.x + deltaY * rotationSpeed;
+                atomGroup.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, newXRotation));
+
+
+                previousMousePosition.x = clientX;
+                previousMousePosition.y = clientY;
+            }
+
+            function onUp() {
+                isDragging = false;
+            }
+
+            // Mouse Events
+            container.addEventListener('mousedown', (e) => onDown(e.clientX, e.clientY), false);
+            container.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY), false);
+            container.addEventListener('mouseup', onUp, false);
+            container.addEventListener('mouseleave', onUp, false);
+
+            // Touch Events
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    e.preventDefault();
+                    onDown(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, false);
+            
+            container.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1) {
+                    e.preventDefault();
+                    onMove(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, false);
+            
+            container.addEventListener('touchend', onUp, false);
+        }
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate the electrons within their shells
+            atomGroup.children.forEach(child => {
+                // Check if the child is an electron group (it has one child which is a sphere)
+                if (child.children.length === 1 && child.children[0].geometry.type === 'SphereGeometry') {
+                    child.rotation.y += child.userData.speed;
+                }
+            });
+
+            // Make the whole atom group slowly tumble for passive movement
+            atomGroup.rotation.y += 0.0005;
+
+            renderer.render(scene, camera);
+        }
+
+        // Start the simulation when the window loads
+        window.onload = function() {
+            init();
+            animate();
+        };
+
+    </script>
+</body>
+</html>
