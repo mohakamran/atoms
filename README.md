@@ -11,6 +11,8 @@ Users can explore atomic structure by selecting elements, adjusting proton/elect
 
 ---
 
+**🔗 Live Preview:** [Click to Open Atom Simulator](https://mohakamran.github.io/atoms/)
+
 ## ✨ Features
 
 ### 🔭 3D Visualization  
